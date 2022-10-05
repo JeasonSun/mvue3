@@ -1,4 +1,6 @@
 import { extend, isObject } from "@mvue/shared";
+import { track, trigger } from "./effect";
+import { TrackOpTypes, TriggerOpTypes } from "./operations";
 import { reactive, ReactiveFlags, readonly } from "./reactive";
 const get = createGetter();
 const readonlyGet = createGetter(true);
@@ -7,13 +9,14 @@ const shallowReadonlyGet = createGetter(true, true);
 
 function createGetter(isReadonly = false, shallow = false) {
   return function get(target: object, key: string, receiver: object) {
-    if(key === ReactiveFlags.IS_REACTIVE){
-      return !isReadonly
+    if (key === ReactiveFlags.IS_REACTIVE) {
+      return !isReadonly;
     }
     const res = Reflect.get(target, key, receiver);
 
     if (!isReadonly) {
-      // TODO: track
+      // TODO: TrackOpTypes类型
+      track(target, TrackOpTypes.GET, key);
     }
     if (shallow) {
       return res;
@@ -39,7 +42,9 @@ function createSetter(shallow = false) {
   ) {
     const result = Reflect.set(target, key, value, receiver);
 
-    // TODO: trigger
+    // 在触发set的时候进行trigger
+    trigger(target, TriggerOpTypes.SET, key);
+
     return result;
   };
 }
