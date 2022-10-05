@@ -1,5 +1,5 @@
 import { extend, isObject } from "@mvue/shared";
-import { reactive, readonly } from "./reactive";
+import { reactive, ReactiveFlags, readonly } from "./reactive";
 const get = createGetter();
 const readonlyGet = createGetter(true);
 const shallowGet = createGetter(false, true);
@@ -7,6 +7,9 @@ const shallowReadonlyGet = createGetter(true, true);
 
 function createGetter(isReadonly = false, shallow = false) {
   return function get(target: object, key: string, receiver: object) {
+    if(key === ReactiveFlags.IS_REACTIVE){
+      return !isReadonly
+    }
     const res = Reflect.get(target, key, receiver);
 
     if (!isReadonly) {
