@@ -8,14 +8,21 @@ export interface ReactiveEffectRunner<T = any> {
   effect: ReactiveEffect;
 }
 
+export interface ReactiveEffectOptions {
+  lazy?: boolean;
+  scheduler?: EffectScheduler;
+  onStop?: () => void;
+}
 export function effect<T = any>(
   fn: () => T,
-  options = {}
+  options: ReactiveEffectOptions = {}
 ): ReactiveEffectRunner {
   const _effect = new ReactiveEffect(fn);
 
   extend(_effect, options);
-  _effect.run();
+  if (!options || !options.lazy) {
+    _effect.run();
+  }
 
   const runner = _effect.run.bind(_effect) as ReactiveEffectRunner;
   runner.effect = _effect;

@@ -67,7 +67,11 @@ export function isReactive(value: unknown): boolean {
   return !!(value && (value as Target)[ReactiveFlags.IS_REACTIVE]);
 }
 
+export const toReactive = <T extends any>(value: T): T =>
+  isObject(value) ? reactive(value as object) : value;
 
+// TODO: toRaw
 // export function toRaw<T>(observed: T): T{
+//   // const raw = observed &&
 
 // }
