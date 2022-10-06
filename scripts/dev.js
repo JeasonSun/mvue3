@@ -1,6 +1,6 @@
 import { execa } from "execa";
 
-const target = "reactivity";
+const target = "vue";
 
 build(target);
 

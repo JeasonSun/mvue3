@@ -26,6 +26,18 @@ importers:
     dependencies:
       '@mvue/shared': link:../shared
 
+  packages/runtime-dom:
+    specifiers:
+      '@mvue/runtime-core': workspace:^1.0.0
+    dependencies:
+      '@mvue/runtime-core': link:../runtime-core
+
+  packages/vue:
+    specifiers:
+      '@mvue/runtime-dom': workspace:^1.0.0
+    dependencies:
+      '@mvue/runtime-dom': link:../runtime-dom
+
 packages:
 
   /@esbuild/android-arm/0.15.10:

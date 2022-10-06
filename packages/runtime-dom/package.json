@@ -1,0 +1,24 @@
+{
+  "name": "@mvue/runtime-dom",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "module": "dist/runtime-dom.esm-bundler.js",
+  "buildOptions": {
+    "name": "VueRuntimeDOM",
+    "formats": [
+      "esm-bundler",
+      "cjs",
+      "global"
+    ]
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@mvue/runtime-core": "workspace:^1.0.0"
+  }
+}
