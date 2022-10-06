@@ -1,6 +1,6 @@
 import { effect } from "../src/effect";
 import { reactive } from "../src/reactive";
-import { isRef, proxyRefs, ref, unRef } from "../src/ref";
+import { isRef, proxyRefs, ref, toRef, toRefs, unRef } from "../src/ref";
 
 describe("reactivity/ref", () => {
   it("should hold a value", () => {
@@ -74,5 +74,93 @@ describe("reactivity/ref", () => {
     proxyUser.age = ref(10);
     expect(proxyUser.age).toBe(10);
     expect(user.age.value).toBe(10);
+  });
+
+  test("toRef", () => {
+    const a = reactive({
+      x: 1,
+    });
+    const x = toRef(a, "x");
+    expect(isRef(x)).toBe(true);
+    expect(x.value).toBe(1);
+
+    // source -> proxy
+    a.x = 2;
+    expect(x.value).toBe(2);
+
+    // proxy -> source
+    x.value = 3;
+    expect(a.x).toBe(3);
+
+    // reactivity
+    let dummyX;
+    effect(() => {
+      dummyX = x.value;
+    });
+    expect(dummyX).toBe(x.value);
+
+    // mutating source should trigger effect using the proxy refs
+    a.x = 4;
+    expect(dummyX).toBe(4);
+
+    // should keep ref
+    const r = { x: ref(1) };
+    expect(toRef(r, "x")).toBe(r.x);
+  });
+
+  test("toRef default value", () => {
+    const a: { x: number | undefined } = { x: undefined };
+    const x = toRef(a, "x", 1);
+    // @ts-ignore
+    expect(x.value).toBe(1);
+
+    a.x = 2;
+    // @ts-ignore
+    expect(x.value).toBe(2);
+
+    a.x = undefined;
+    // @ts-ignore
+    expect(x.value).toBe(1);
+  });
+
+  test("toRefs", () => {
+    const a = reactive({
+      x: 1,
+      y: 2,
+    });
+
+    const { x, y } = toRefs(a);
+
+    expect(isRef(x)).toBe(true);
+    expect(isRef(y)).toBe(true);
+    expect(x.value).toBe(1);
+    expect(y.value).toBe(2);
+
+    // source -> proxy
+    a.x = 2;
+    a.y = 3;
+    expect(x.value).toBe(2);
+    expect(y.value).toBe(3);
+
+    // proxy -> source
+    x.value = 3;
+    y.value = 4;
+    expect(a.x).toBe(3);
+    expect(a.y).toBe(4);
+
+    // reactivity
+    let dummyX, dummyY;
+    effect(() => {
+      dummyX = x.value;
+      dummyY = y.value;
+    });
+    expect(dummyX).toBe(x.value);
+    expect(dummyY).toBe(y.value);
+
+    // mutating source should trigger effect using the proxy refs
+    a.x = 4;
+    a.y = 5;
+    expect(dummyX).toBe(4);
+    expect(dummyY).toBe(5);
   });
 });

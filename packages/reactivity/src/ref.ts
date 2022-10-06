@@ -1,4 +1,4 @@
-import { hasChanged } from "@mvue/shared";
+import { hasChanged, isArray } from "@mvue/shared";
 import { createDep, Dep } from "./dep";
 import { isTracking, trackEffects, triggerEffects } from "./effect";
 import { toReactive } from "./reactive";
@@ -97,5 +97,41 @@ export function unRef(ref: any) {
 }
 
 export function isRef(value: any) {
-  return !!value.__v_isRef;
+  return !!(value && value.__v_isRef === true);
+}
+
+export function toRef<T extends object, K extends keyof T>(
+  object: T,
+  key: K,
+  defaultValue?: T[K]
+) {
+  const val = object[key];
+  return isRef(val) ? val : new ObjectRefImpl(object, key, defaultValue);
+}
+
+class ObjectRefImpl<T extends object, K extends keyof T> {
+  public readonly __v_isRef = true;
+
+  constructor(
+    private readonly _object: T,
+    private readonly _key: K,
+    private readonly _defaultValue?: T[K]
+  ) {}
+
+  get value() {
+    const val = this._object[this._key];
+    return val === undefined ? (this._defaultValue as T[K]) : val;
+  }
+
+  set value(newVal) {
+    this._object[this._key] = newVal;
+  }
+}
+
+export function toRefs<T extends object>(object: T) {
+  const ret: any = isArray(object) ? new Array(object.length) : {};
+  for (const key in object) {
+    ret[key] = toRef(object, key);
+  }
+  return ret;
 }
