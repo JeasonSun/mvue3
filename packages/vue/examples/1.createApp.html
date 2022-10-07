@@ -15,8 +15,8 @@
   <script>
     const { createApp } = Vue;
     const App = {
-      render() {
-        return 'div'
+      render(proxy) {
+        console.log('开始渲染组件')
       }
     }
     createApp(App, { name: 'mojie', age: 28 }).mount('#app')
