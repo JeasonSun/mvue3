@@ -17,6 +17,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@mvue/reactivity": "workspace:^1.0.0"
+    "@mvue/reactivity": "workspace:^1.0.0",
+    "@mvue/shared": "workspace:^1.0.0"
   }
 }

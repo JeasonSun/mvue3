@@ -17,3 +17,5 @@ export const NOOP = () => {};
 
 const onReg = /^on[^a-z]/;
 export const isOn = (key: string) => onReg.test(key);
+
+export * from "./shapeFlag";
