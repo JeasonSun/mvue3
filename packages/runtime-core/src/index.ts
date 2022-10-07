@@ -1,3 +1,3 @@
-export default {
-  name: 'runtime-core'
-}
+export { createRenderer } from "./renderer";
+
+export * from "@mvue/reactivity";

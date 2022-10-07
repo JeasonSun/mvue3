@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -7,10 +8,20 @@
   <title>Document</title>
   <script src="../dist/vue.global.js"></script>
 </head>
+
 <body>
-  
+  <div id="app"> container </div>
+
   <script>
-    console.log(Vue)
+    const { createApp } = Vue;
+    const App = {
+      render(){
+        return 'div'
+      }
+    }
+    createApp(App).mount('#app')
+    
   </script>
 </body>
+
 </html>

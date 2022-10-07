@@ -26,6 +26,12 @@ importers:
     dependencies:
       '@mvue/shared': link:../shared
 
+  packages/runtime-core:
+    specifiers:
+      '@mvue/reactivity': workspace:^1.0.0
+    dependencies:
+      '@mvue/reactivity': link:../reactivity
+
   packages/runtime-dom:
     specifiers:
       '@mvue/runtime-core': workspace:^1.0.0
