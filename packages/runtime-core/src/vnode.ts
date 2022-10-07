@@ -1,4 +1,10 @@
-import { isFunction, isObject, isString, ShapeFlags } from "@mvue/shared";
+import {
+  isArray,
+  isFunction,
+  isObject,
+  isString,
+  ShapeFlags,
+} from "@mvue/shared";
 
 export function createVNode(
   type: any,
@@ -14,7 +20,7 @@ export function createVNode(
     ? ShapeFlags.FUNCTIONAL_COMPONENT
     : 0;
 
-  return {
+  const vnode = {
     __v_isVNode: true,
     type,
     props,
@@ -24,4 +30,20 @@ export function createVNode(
     el: null,
     shapeFlag,
   };
+
+  if (children) {
+    normalizeChildren(vnode, children);
+  }
+
+  return vnode;
+}
+
+function normalizeChildren(vnode: any, children: any) {
+  let type = 0;
+  if (isArray(children)) {
+    type = ShapeFlags.ARRAY_CHILDREN;
+  } else {
+    type = ShapeFlags.TEXT_CHILDREN;
+  }
+  vnode.ShapeFlags |= type;
 }
