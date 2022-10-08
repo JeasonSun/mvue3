@@ -1,7 +1,8 @@
-import { ShapeFlags, isFunction, isObject } from "@mvue/shared";
+import { ShapeFlags, isFunction, isObject, EMPTY_OBJ } from "@mvue/shared";
 import { proxyRefs } from "@mvue/reactivity";
 import { initProps } from "./componentProps";
 import { initSlots } from "./componentSlots";
+import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
 
 export function createComponentInstance(vnode) {
   const type = vnode.type;
@@ -14,7 +15,7 @@ export function createComponentInstance(vnode) {
     slots: {},
     ctx: {},
     data: {},
-    setupState: {},
+    setupState: EMPTY_OBJ,
     render: null,
     subTree: null,
     isMounted: false,
@@ -46,9 +47,9 @@ function isStatefulComponent(instance: any) {
 
 function setupStatefulComponent(instance) {
   // 1. 代理，传递给 render 函数的参数
-  // TODO:  创建 render 函数的 proxy
-  // instance.proxy = new Proxy(instance.ctx, PublicInstanceProxyHandlers)
-  console.log('[TODO] 创建 render 函数的 proxy')
+  // 创建 render 函数的 proxy
+  instance.proxy = new Proxy(instance.ctx, PublicInstanceProxyHandlers);
+  console.log("创建 render 函数的 proxy");
 
   // 2. 获取组件的类型， 拿到组件的setup方法
   const Component = instance.type;

@@ -1,10 +1,15 @@
 import {
   isArray,
   isFunction,
+  isNumber,
   isObject,
   isString,
   ShapeFlags,
 } from "@mvue/shared";
+
+export const Text = Symbol("Text");
+export const Comment = Symbol("Comment");
+export const Fragment = Symbol("Fragment");
 
 export function createVNode(
   type: any,
@@ -46,4 +51,22 @@ function normalizeChildren(vnode: any, children: any) {
     type = ShapeFlags.TEXT_CHILDREN;
   }
   vnode.ShapeFlags |= type;
+}
+
+// 标准化 vnode 的格式
+// 目的是为了让 child 支持多种格式
+export function normalizeVNode(child) {
+  // 暂时只支持处理 child 为 string 和 number 的情况
+  if (child == null || typeof child === "boolean") {
+    return createVNode(Comment);
+  } else if (isArray(child)) {
+    return createVNode(Fragment, null, child.slice());
+  } else if (typeof child === "object") {
+    // return cloneIfMounted(child)
+    // 暂时不处理
+    // TODO: cloneIfMounted
+    return;
+  } else {
+    return createVNode(Text, null, String(child));
+  }
 }
