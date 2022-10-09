@@ -5,8 +5,6 @@ import { patchProp } from "./patchProp";
 
 const rendererOptions = extend({ patchProp }, nodeOps);
 
-
-
 export const createApp = (rootComponent: any, rootProps: any) => {
   const app = createRenderer(rendererOptions).createApp(
     rootComponent,
@@ -21,3 +19,5 @@ export const createApp = (rootComponent: any, rootProps: any) => {
   };
   return app;
 };
+
+export * from "@mvue/runtime-core";

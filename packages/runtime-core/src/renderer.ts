@@ -2,9 +2,17 @@ import { ReactiveEffect } from "@mvue/reactivity";
 import { ShapeFlags } from "@mvue/shared";
 import { createAppAPI } from "./apiCreateApp";
 import { createComponentInstance, setupComponent } from "./component";
-import { normalizeVNode } from "./vnode";
+import { normalizeVNode, Text } from "./vnode";
 
 export function createRenderer(rendererOptions: any) {
+  const {
+    insert: hostInsert,
+    remove: hostRemove,
+    patchProp: hostPatchProp,
+    createElement: hostCreateElement,
+    createText: hostCreateText,
+    setElementText: hostSetElementText,
+  } = rendererOptions;
   function mountComponent(initialVNode, container) {
     // 1. 创建组件实例
     const instance = (initialVNode.component =
@@ -29,7 +37,7 @@ export function createRenderer(rendererOptions: any) {
         ));
 
         // 用 render 函数的返回值， 继续渲染
-        console.log('patch函数：', subTree, container)
+        console.log("patch函数：", subTree, container);
         patch(null, subTree, container);
         instance.isMounted = true;
       }
@@ -61,16 +69,77 @@ export function createRenderer(rendererOptions: any) {
     }
   }
 
-  function processElement(n1: any, n2: any, container: any) {
+  function mountChildren(children, container) {
+    children.forEach((child) => {
+      const VNodeChild = normalizeVNode(child);
+      console.log("mountChildren:", VNodeChild);
+      patch(null, VNodeChild, container);
+    });
+  }
+
+  function mountElement(vnode: any, container: any) {
+    const { shapeFlag, props } = vnode;
+    // 1. 创建 element
+    const el = (vnode.el = hostCreateElement(vnode.type));
+
+    if (props) {
+      for (const key in props) {
+        hostPatchProp(el, key, null, props[key]);
+      }
+    }
+
+    // 支持单儿子组件和多儿子组件的创建
+    if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+      hostSetElementText(el, vnode.children);
+    } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+      mountChildren(vnode.children, el);
+    }
+
+    // TODO: 触发钩子
+    console.log("vnodeHook -> onVnodeBeforeMount");
+    console.log("DirectiveHook -> beforeMount");
+    console.log("transition -> beforeEnter");
+
+    console.log("插入", el, container);
+    // 插入
+    hostInsert(el, container);
+  }
+
+  function updateElement(n1: any, n2: any, container: any) {
     throw new Error("Function not implemented.");
   }
 
+  function processElement(n1: any, n2: any, container: any) {
+    if (n1 == null) {
+      mountElement(n2, container);
+    } else {
+      updateElement(n1, n2, container);
+    }
+  }
+
+  function processText(n1: any, n2: any, container: any) {
+    if (n1 == null) {
+      // child 是一个文本， 直接插入即可
+      hostInsert((n2.el = hostCreateText(n2.children)), container);
+    } else {
+    }
+  }
+
   function patch(n1, n2, container) {
-    const { shapeFlag } = n2;
-    if (shapeFlag & ShapeFlags.ELEMENT) {
-      processElement(n1, n2, container);
-    } else if (shapeFlag & ShapeFlags.COMPONENT) {
-      processComponent(n1, n2, container);
+    const { shapeFlag, type } = n2;
+    console.log(type);
+    switch (type) {
+      case Text:
+        processText(n1, n2, container);
+        break;
+
+      default:
+        if (shapeFlag & ShapeFlags.ELEMENT) {
+          processElement(n1, n2, container);
+        } else if (shapeFlag & ShapeFlags.COMPONENT) {
+          processComponent(n1, n2, container);
+        }
+        break;
     }
   }
 

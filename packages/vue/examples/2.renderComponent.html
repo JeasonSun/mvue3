@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="../dist/vue.global.js"></script>
+</head>
+
+<body>
+  <div id="app"> container </div>
+
+  <script>
+    const { createApp, h } = Vue;
+    const App = {
+      name: 'rootAppComponent',
+      setup() {
+        const clickHandler = () => {
+          alert('click')
+        }
+        return {
+          clickHandler
+        }
+      },
+      render(proxy) {
+        // return h('div', { style: { color: 'red' } }, 'hello world')
+        // return h('div', { style: { color: 'red' } }, ['hello world', '2022'])
+        return h('div', { style: { color: 'red' } }, h('span', { class: 'hello', onClick: proxy.clickHandler }, 'hello'))
+      }
+    }
+    createApp(App, { name: 'mojie', age: 28 }).mount('#app')
+
+  </script>
+</body>
+
+</html>

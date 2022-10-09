@@ -1,7 +1,6 @@
 import {
   isArray,
   isFunction,
-  isNumber,
   isObject,
   isString,
   ShapeFlags,
@@ -50,7 +49,7 @@ function normalizeChildren(vnode: any, children: any) {
   } else {
     type = ShapeFlags.TEXT_CHILDREN;
   }
-  vnode.ShapeFlags |= type;
+  vnode.shapeFlag |= type;
 }
 
 // 标准化 vnode 的格式
@@ -62,11 +61,12 @@ export function normalizeVNode(child) {
   } else if (isArray(child)) {
     return createVNode(Fragment, null, child.slice());
   } else if (typeof child === "object") {
-    // return cloneIfMounted(child)
-    // 暂时不处理
-    // TODO: cloneIfMounted
-    return;
+    return child;
   } else {
     return createVNode(Text, null, String(child));
   }
+}
+
+export function isVNode(value) {
+  return value ? value.__v_isVNode === true : false;
 }
