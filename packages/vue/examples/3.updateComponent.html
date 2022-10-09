@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="../dist/vue.global.js"></script>
+</head>
+
+<body>
+  <div id="app"> container </div>
+
+  <script>
+    const { createApp, h, reactive } = Vue;
+    const App = {
+      name: 'rootAppComponent',
+      setup() {
+        const state = reactive({
+          name: 'mojie',
+          age: 18
+        })
+
+        setTimeout(() => {
+          console.log('change')
+          state.name = 'jeason';
+          state.name = 'jun';
+          state.age = 20;
+        }, 3000)
+        return {
+          state
+
+        }
+      },
+      render(proxy) {
+        return h('div', {}, 'hello', proxy.state.name);
+      }
+    }
+    createApp(App, { }).mount('#app')
+
+  </script>
+</body>
+
+</html>

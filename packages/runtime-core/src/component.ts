@@ -4,10 +4,13 @@ import { initProps } from "./componentProps";
 import { initSlots } from "./componentSlots";
 import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
 
+let uid = 0;
+
 export function createComponentInstance(vnode) {
   const type = vnode.type;
 
   const instance = {
+    uid: uid++,
     vnode,
     type,
     props: {},

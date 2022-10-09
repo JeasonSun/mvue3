@@ -2,6 +2,7 @@ import { ReactiveEffect } from "@mvue/reactivity";
 import { ShapeFlags } from "@mvue/shared";
 import { createAppAPI } from "./apiCreateApp";
 import { createComponentInstance, setupComponent } from "./component";
+import { queueJob } from "./scheduler";
 import { normalizeVNode, Text } from "./vnode";
 
 export function createRenderer(rendererOptions: any) {
@@ -40,6 +41,8 @@ export function createRenderer(rendererOptions: any) {
         console.log("patch函数：", subTree, container);
         patch(null, subTree, container);
         instance.isMounted = true;
+      } else {
+        console.log('TODO: update Component')
       }
     };
 
@@ -47,12 +50,12 @@ export function createRenderer(rendererOptions: any) {
     // 在Vue 3.2 中才改用了 new ReactiveEffect 底层API，原因是在源码中 需要处理 effect scope 逻辑， 暂时不用。
     const effect = (instance.effect = new ReactiveEffect(
       componentUpdateFn,
-      () => {
-        console.log(" render scheduler");
-      }
+      () => queueJob(instance.update)
     ));
 
     const update = (instance.update = effect.run.bind(effect));
+
+    update.id = instance.uid;
 
     update();
   }
