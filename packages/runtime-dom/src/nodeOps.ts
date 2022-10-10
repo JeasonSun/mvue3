@@ -17,4 +17,5 @@ export const nodeOps = {
   },
   setElementText: (el: any, text: any) => (el.textContent = text),
   querySelector: (selector: any) => document.querySelector(selector),
+  nextSibling: (node) => node.nextSibling,
 };

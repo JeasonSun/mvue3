@@ -40,6 +40,7 @@ export function setupComponent(instance) {
   initSlots(instance, children);
 
   // 如果是stateful component ，尝试取一下setup的返回
+  // TIP: 这边的返回值是什么？似乎没有用到
   const setupResult = isStateful ? setupStatefulComponent(instance) : undefined;
 
   return setupResult;
@@ -68,6 +69,7 @@ function setupStatefulComponent(instance) {
 }
 
 function createSetupContext(instance) {
+  // TODO: setup context: attrs slots emit 
   console.log("[TODO]  setup context");
   return {
     attrs: instance.attrs,

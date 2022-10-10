@@ -3,7 +3,7 @@ import { ShapeFlags } from "@mvue/shared";
 import { createAppAPI } from "./apiCreateApp";
 import { createComponentInstance, setupComponent } from "./component";
 import { queueJob } from "./scheduler";
-import { normalizeVNode, Text } from "./vnode";
+import { isSameVNodeType, normalizeVNode, Text } from "./vnode";
 
 export function createRenderer(rendererOptions: any) {
   const {
@@ -13,6 +13,7 @@ export function createRenderer(rendererOptions: any) {
     createElement: hostCreateElement,
     createText: hostCreateText,
     setElementText: hostSetElementText,
+    nextSibling: hostNextSibling,
   } = rendererOptions;
   function mountComponent(initialVNode, container) {
     // 1. 创建组件实例
@@ -39,10 +40,27 @@ export function createRenderer(rendererOptions: any) {
 
         // 用 render 函数的返回值， 继续渲染
         console.log("patch函数：", subTree, container);
+
         patch(null, subTree, container);
         instance.isMounted = true;
       } else {
-        console.log('TODO: update Component')
+        const proxyToUse = instance.proxy;
+
+        const nextTree = normalizeVNode(
+          instance.render.call(proxyToUse, proxyToUse)
+        );
+
+        const prevTree = instance.subTree;
+        instance.subTree = nextTree;
+
+        console.log(`${instance.type.name}: 触发 beforeUpdated hook`);
+        console.log(`${instance.type.name}: 触发 onVnodeBeforeUpdate hook`);
+        // TIP: container ? prevTree.el
+        patch(prevTree, nextTree, container);
+
+        // 触发 updated hook
+        console.log(`${instance.type.name}:触发 Updated hook`);
+        console.log(`${instance.type.name}:触发 onVnodeUpdated hook`);
       }
     };
 
@@ -93,6 +111,7 @@ export function createRenderer(rendererOptions: any) {
 
     // 支持单儿子组件和多儿子组件的创建
     if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+      console.log("ShapeFlags.TEXT_CHILDREN");
       hostSetElementText(el, vnode.children);
     } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
       mountChildren(vnode.children, el);
@@ -108,15 +127,90 @@ export function createRenderer(rendererOptions: any) {
     hostInsert(el, container);
   }
 
-  function updateElement(n1: any, n2: any, container: any) {
-    throw new Error("Function not implemented.");
+  function unmountChildren(children) {
+    for (let i = 0; i < children.length; i++) {
+      unmount(children[i]);
+    }
+  }
+
+  function patchChildren(n1, n2, container) {
+    const { children: c1, shapeFlag: prevShapeFlag } = n1;
+    const { children: c2, shapeFlag } = n2;
+    // 如果n2 的children是单个的 文本类型
+    if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+      // 如果 n1 的children是数组， 那就unmountChildren
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        console.log("case 1-1:", "原children是数组，现在是文本，卸载原数组");
+        unmountChildren(c1);
+      }
+      // 如果 n1 的children也是文本，直接替换即可
+      if (c1 !== c2) {
+        console.log('case 1-2:', '更新新children文本内容')
+        hostSetElementText(container, c2 as string);
+      }
+    } else {
+      // 现在的children不是text， 可能为数组 或者 null
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        //  原来的是数组
+        if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+          // 现在的也是数组
+          // TODO: 数组 vs 数组， 核心的diff算法
+          console.log("case 2: ", "数组 vs 数组， 核心的diff算法");
+        } else {
+          // 没有新的children，直接删除老的
+          console.log("case 3:", "没有新的children，老的children是数组");
+          unmountChildren(c1);
+        }
+      } else {
+        // 原来的是 text 或者 null
+        // 现在的是 数组 或者 null
+        if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
+          console.log('case 4-1:', '原来是文本或者null')
+          hostSetElementText(container, "");
+        }
+
+        // mount 新的children array
+        if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+          console.log("case 4-2:", '挂载新的数组children');
+          mountChildren(c2, container);
+        }
+      }
+    }
+  }
+  function patchProps(oldProps, newProps, el) {
+    if (oldProps !== newProps) {
+      for (let key in newProps) {
+        const prev = oldProps[key];
+        const next = newProps[key];
+        if (prev !== next) {
+          hostPatchProp(el, key, prev, next);
+        }
+      }
+
+      for (let key in oldProps) {
+        if (!(key in newProps)) {
+          hostPatchProp(el, key, oldProps[key], null);
+        }
+      }
+    }
+  }
+
+  function patchElement(n1: any, n2: any, container: any) {
+    console.log("patchElement", n1, n2);
+    let el = (n2.el = n1.el);
+    // 更新属性
+    const oldProps = n1.props || {};
+    const newProps = n2.props || {};
+    patchProps(oldProps, newProps, el);
+
+    patchChildren(n1, n2, el);
   }
 
   function processElement(n1: any, n2: any, container: any) {
     if (n1 == null) {
       mountElement(n2, container);
     } else {
-      updateElement(n1, n2, container);
+      patchElement(n1, n2, container);
     }
   }
 
@@ -128,9 +222,25 @@ export function createRenderer(rendererOptions: any) {
     }
   }
 
-  function patch(n1, n2, container) {
+  function getNextHostNode(vnode) {
+    // TODO: 如果vnode是组件
+
+    return hostNextSibling(vnode.anchor || vnode.el);
+  }
+
+  // unmount 应该需要考虑vnode的类型， 这边先只考虑 元素 类型
+  function unmount(vnode) {
+    hostRemove(vnode.el);
+  }
+
+  function patch(n1, n2, container, anchor = null) {
+    console.log("n1", n1);
+    if (n1 && !isSameVNodeType(n1, n2)) {
+      anchor = getNextHostNode(n1);
+      unmount(n1);
+      n1 = null;
+    }
     const { shapeFlag, type } = n2;
-    console.log(type);
     switch (type) {
       case Text:
         processText(n1, n2, container);

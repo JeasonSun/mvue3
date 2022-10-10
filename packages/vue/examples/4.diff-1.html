@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="../dist/vue.global.js"></script>
+</head>
+
+<body>
+  <div id="app"> container </div>
+
+  <script>
+    const { createApp, h, ref } = Vue;
+    const App = {
+      name: 'rootAppComponent',
+      setup() {
+        const flag = ref(true);
+        window.flag = flag;
+
+        return {
+          flag
+        }
+      },
+      render(proxy) {
+        // return proxy.flag ? h('div', {}, 'mojie'): h('span', {}, 'jeason');
+
+        // return proxy.flag ? h('div', { style: { color: 'red' } }, 'mojie') : h('div', { style: { color: 'green' } }, 'jeason');
+
+        // return proxy.flag ? h('div', { style: { color: 'red' } }, 'mojie') : h('div', { style: { color: 'green' } },[h('span', {}, 'child1'),h('span', {}, 'child2') ]);
+
+        return proxy.flag ? h('div', { style: { color: 'red' } }, [h('span', {}, 'child1'),h('span', {}, 'child2') ]) : h('div', { style: { color: 'green' } }, 'new-child');
+        
+      }
+    }
+    createApp(App, {}).mount('#app')
+
+  </script>
+</body>
+
+</html>
