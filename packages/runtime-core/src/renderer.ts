@@ -98,7 +98,7 @@ export function createRenderer(rendererOptions: any) {
     });
   }
 
-  function mountElement(vnode: any, container: any) {
+  function mountElement(vnode: any, container: any, anchor = null) {
     const { shapeFlag, props } = vnode;
     // 1. 创建 element
     const el = (vnode.el = hostCreateElement(vnode.type));
@@ -124,12 +124,115 @@ export function createRenderer(rendererOptions: any) {
 
     console.log("插入", el, container);
     // 插入
-    hostInsert(el, container);
+    hostInsert(el, container, anchor);
   }
 
   function unmountChildren(children) {
     for (let i = 0; i < children.length; i++) {
       unmount(children[i]);
+    }
+  }
+
+  function patchKeyedChildren(c1, c2, container) {
+    let i = 0;
+    const l1 = c1.length;
+    const l2 = c2.length;
+    let e1 = l1 - 1;
+    let e2 = l2 - 1;
+
+    // 1. sync from start: 从前往后比，不同即退出
+    // (a b) c
+    // (a b) d e
+    // i = 2, e1 = 2, e2 = 3
+    while (i <= e1 && i <= e2) {
+      const n1 = c1[i];
+      const n2 = c2[i];
+      if (isSameVNodeType(n1, n2)) {
+        patch(n1, n2, container);
+      } else {
+        break;
+      }
+      i++;
+    }
+    console.log(`e1 => ${e1} ;  e2 => ${e2} ;  i => ${i}`);
+
+    // 2. sync from end
+    //   a (b c)
+    // d e (b c)
+    while (i <= e1 && i <= e2) {
+      const n1 = c1[e1];
+      const n2 = c2[e2];
+      if (isSameVNodeType(n1, n2)) {
+        patch(n1, n2, container);
+      } else {
+        break;
+      }
+      e1--;
+      e2--;
+    }
+    console.log(`e1 => ${e1} ;  e2 => ${e2} ;  i => ${i}`);
+
+    // 3. common sequence + mount
+    // (a b)
+    // (a b) c
+    // i = 2, e1 = 1, e2 = 2
+
+    // (a b)
+    // (a b) c d
+    // i = 2, e1 = 1, e2 = 3
+
+    //   (a b)
+    // c (a b)
+    // i = 0, e1 = -1, e2 = 0
+
+    //     (a b)
+    // c d (a b)
+    // i = 0, e1 = -1, e2 = 1
+    if (i > e1) {
+      if (i <= e2) {
+        const nextPos = e2 + 1;
+        const anchor = nextPos < l2 ? c2[nextPos].el : null;
+        while (i <= e2) {
+          patch(null, c2[i], container, anchor);
+          i++;
+        }
+      }
+    }
+
+    // 4. common sequence + unmount
+    // (a b) c
+    // (a b)
+    // i = 2 , e1 = 2, e2 = 1
+    // a (b c)
+    //   (b c)
+    // i = 0, e1 = 0, e2 = -1
+    // a b (c d)
+    //     (c d)
+    // i = 0, e1 = 1, e2 = -1
+    else if (i > e2) {
+      while (i <= e1) {
+        unmount(c1[i]);
+        i++;
+      }
+    }
+
+    // 5. unknown sequence
+    // a b [c d e] f g
+    // a b [e d c h] f g
+    // i = 2, e1 = 4, e2 = 5
+    else {
+      const s1 = i;
+      const s2 = i;
+
+      // 5.1 build key:index map for newChildren
+      const keyToNewIndexMap = new Map();
+      for (i = s2; i <= e2; i++) {
+        const nextChild = c2[i];
+        if (nextChild.key != null) {
+          keyToNewIndexMap.set(nextChild.key, i);
+        }
+      }
+      console.log("keyToNewIndexMap", keyToNewIndexMap);
     }
   }
 
@@ -145,7 +248,7 @@ export function createRenderer(rendererOptions: any) {
       }
       // 如果 n1 的children也是文本，直接替换即可
       if (c1 !== c2) {
-        console.log('case 1-2:', '更新新children文本内容')
+        console.log("case 1-2:", "更新新children文本内容");
         hostSetElementText(container, c2 as string);
       }
     } else {
@@ -156,6 +259,7 @@ export function createRenderer(rendererOptions: any) {
           // 现在的也是数组
           // TODO: 数组 vs 数组， 核心的diff算法
           console.log("case 2: ", "数组 vs 数组， 核心的diff算法");
+          patchKeyedChildren(c1, c2, container);
         } else {
           // 没有新的children，直接删除老的
           console.log("case 3:", "没有新的children，老的children是数组");
@@ -165,13 +269,13 @@ export function createRenderer(rendererOptions: any) {
         // 原来的是 text 或者 null
         // 现在的是 数组 或者 null
         if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
-          console.log('case 4-1:', '原来是文本或者null')
+          console.log("case 4-1:", "原来是文本或者null");
           hostSetElementText(container, "");
         }
 
         // mount 新的children array
         if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-          console.log("case 4-2:", '挂载新的数组children');
+          console.log("case 4-2:", "挂载新的数组children");
           mountChildren(c2, container);
         }
       }
@@ -206,9 +310,9 @@ export function createRenderer(rendererOptions: any) {
     patchChildren(n1, n2, el);
   }
 
-  function processElement(n1: any, n2: any, container: any) {
+  function processElement(n1: any, n2: any, container: any, anchor = null) {
     if (n1 == null) {
-      mountElement(n2, container);
+      mountElement(n2, container, anchor);
     } else {
       patchElement(n1, n2, container);
     }
@@ -248,7 +352,7 @@ export function createRenderer(rendererOptions: any) {
 
       default:
         if (shapeFlag & ShapeFlags.ELEMENT) {
-          processElement(n1, n2, container);
+          processElement(n1, n2, container, anchor);
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
           processComponent(n1, n2, container);
         }

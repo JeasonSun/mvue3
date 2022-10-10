@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="../dist/vue.global.js"></script>
+</head>
+
+<body>
+  <div id="app"> container </div>
+
+  <script>
+    const { createApp, h, ref } = Vue;
+    const App = {
+      name: 'rootAppComponent',
+      setup() {
+        const flag = ref(true);
+        window.flag = flag;
+
+        return {
+          flag
+        }
+      },
+      render(proxy) {
+        // 1.  sync from start
+        // return proxy.flag ?
+        //   h('div', {}, [
+        //     h('p', { key: 'a' }, 'a'),
+        //     h('p', { key: 'b' }, 'b'),
+        //     h('p', { key: 'c' }, 'c')
+        //   ]) :
+        //   h('div', {}, [
+        //     h('p', { key: 'a' }, 'a'),
+        //     h('p', { key: 'b' }, 'b'),
+        //     h('p', { key: 'd' }, 'd'),
+        //     h('p', { key: 'e' }, 'e')
+        //   ])
+        //   ;
+
+        // 2.  sync from end
+        // return proxy.flag ?
+        //   h('div', {}, [
+        //     h('p', { key: 'a' }, 'a'),
+        //     h('p', { key: 'b' }, 'b'),
+        //     h('p', { key: 'c' }, 'c')
+        //   ]) :
+        //   h('div', {}, [
+        //     h('p', { key: 'd' }, 'd'),
+        //     h('p', { key: 'e' }, 'e'),
+        //     h('p', { key: 'b' }, 'b'),
+        //     h('p', { key: 'c' }, 'c')
+        //   ])
+        //   ;
+
+        // 3. common sequence + mount
+        // (a b)
+        // (a b) c
+        // i = 2, e1 = 1, e2 = 2
+
+        // (a b)
+        // (a b) c d
+        // i = 2, e1 = 1, e2 = 3
+
+        //   (a b)
+        // c (a b)
+        // i = 0, e1 = -1, e2 = 0
+
+        //     (a b)
+        // c d (a b)
+        // i = 0, e1 = -1, e2 = 1
+        // return proxy.flag ?
+        //   h('div', {}, [
+        //     h('p', { key: 'a' }, 'a'),
+        //     h('p', { key: 'b' }, 'b')
+        //   ]) :
+        //   h('div', {}, [
+        //     h('p', { key: 'a' }, 'a'),
+        //     h('p', { key: 'b' }, 'b'),
+        //     h('p', { key: 'c' }, 'c'),
+        //     h('p', { key: 'd' }, 'd'),
+        //   ])
+        //   ;
+
+        // return proxy.flag ?
+        //   h('div', {}, [
+        //     h('p', { key: 'a' }, 'a'),
+        //     h('p', { key: 'b' }, 'b')
+        //   ]) :
+        //   h('div', {}, [
+        //     h('p', { key: 'c' }, 'c'),
+        //     h('p', { key: 'd' }, 'd'),
+        //     h('p', { key: 'a' }, 'a'),
+        //     h('p', { key: 'b' }, 'b')
+        //   ])
+        //   ;
+
+        // 4. common sequence + unmount
+        // (a b) c
+        // (a b)
+        // i = 2 , e1 = 2, e2 = 1
+        // a (b c)
+        //   (b c)
+        // i = 0, e1 = 0, e2 = -1
+        // a b (c d)
+        //     (c d)
+        // i = 0, e1 = 1, e2 = -1
+
+        // return proxy.flag ?
+        //   h('div', {}, [
+        //     h('p', { key: 'a' }, 'a'),
+        //     h('p', { key: 'b' }, 'b'),
+        //     h('p', { key: 'c' }, 'c'),
+        //     h('p', { key: 'd' }, 'd')
+        //   ]) :
+        //   h('div', {}, [
+        //     h('p', { key: 'c' }, 'c'),
+        //     h('p', { key: 'd' }, 'd')
+        //   ]);
+
+        // 5. unknown sequence
+        // a b [c d e] f g
+        // a b [e d c h] f g
+        // i = 2, e1 = 4, e2 = 5
+        return proxy.flag ?
+          h('div', {}, [
+            h('p', { key: 'a' }, 'a'),
+            h('p', { key: 'b' }, 'b'),
+            h('p', { key: 'c' }, 'c'),
+            h('p', { key: 'd' }, 'd'),
+            h('p', { key: 'e' }, 'e'),
+            h('p', { key: 'f' }, 'f'),
+            h('p', { key: 'g' }, 'g')
+          ]) :
+          h('div', {}, [
+            h('p', { key: 'a' }, 'a'),
+            h('p', { key: 'b' }, 'b'),
+            h('p', { key: 'e' }, 'e'),
+            h('p', { key: 'd' }, 'd'),
+            h('p', { key: 'c' }, 'c'),
+            h('p', { key: 'h' }, 'h'),
+            h('p', { key: 'f' }, 'f'),
+            h('p', { key: 'g' }, 'g')
+          ]);
+      }
+    }
+    createApp(App, {}).mount('#app')
+
+  </script>
+</body>
+
+</html>
