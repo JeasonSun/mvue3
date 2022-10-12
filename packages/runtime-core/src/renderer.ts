@@ -233,6 +233,61 @@ export function createRenderer(rendererOptions: any) {
         }
       }
       console.log("keyToNewIndexMap", keyToNewIndexMap);
+
+      const toBePatched = e2 - s2 + 1;
+      let patched = 0;
+      let moved = false;
+      let maxNewIndexSoFar = 0;
+      const newIndexToOldIndexMap = new Array(toBePatched).fill(0);
+
+      // 5.2 loop through old children left to be patched and try to patch
+      // matching nodes & remove nodes that are no longer present
+      // 就是去老的里面查找， 如果老的在新的中找不到了，直接删除
+      // 如果能够找到，尝试patch
+      // 并且记录新旧之间的索引关系：
+      for (let i = s1; i <= e1; i++) {
+        const prevChild = c1[i];
+        // 如果 新 children 中元素都已经更新过了，那就直接停止
+        if (patched >= toBePatched) {
+          unmount(prevChild);
+          continue;
+        }
+
+        let newIndex = keyToNewIndexMap.get(prevChild.key);
+        if (newIndex === undefined) {
+          unmount(prevChild);
+        } else {
+          newIndexToOldIndexMap[newIndex - s2] = i + 1;
+          if (newIndex >= maxNewIndexSoFar) {
+            maxNewIndexSoFar = newIndex;
+          } else {
+            moved = true;
+          }
+          patch(prevChild, c2[newIndex], container);
+          patched++;
+        }
+      }
+
+      // 5.3 move and mount
+      let increasingNewIndexSequence = moved
+        ? getSequence(newIndexToOldIndexMap)
+        : [];
+      let j = increasingNewIndexSequence.length - 1;
+
+      for (i = toBePatched - 1; i >= 0; i--) {
+        const nextIndex = s2 + i;
+        const nextChild = c2[nextIndex];
+        const anchor = nextIndex + 1 < l2 ? c2[nextIndex + 1].el : null;
+        if (newIndexToOldIndexMap[i] === 0) {
+          patch(null, nextChild, container, anchor);
+        } else if (moved) {
+          if (j < 0 || i !== increasingNewIndexSequence[j]) {
+            hostInsert(nextChild.el, container, anchor);
+          } else {
+            j--;
+          }
+        }
+      }
     }
   }
 
@@ -367,4 +422,46 @@ export function createRenderer(rendererOptions: any) {
   return {
     createApp: createAppAPI(render),
   };
+}
+
+// https://en.wikipedia.org/wiki/Longest_increasing_subsequence
+function getSequence(arr: number[]): number[] {
+  const p = arr.slice();
+  const result = [0];
+  let i, j, u, v, c;
+  const len = arr.length;
+  for (i = 0; i < len; i++) {
+    const arrI = arr[i];
+    if (arrI !== 0) {
+      j = result[result.length - 1];
+      if (arr[j] < arrI) {
+        p[i] = j;
+        result.push(i);
+        continue;
+      }
+      u = 0;
+      v = result.length - 1;
+      while (u < v) {
+        c = (u + v) >> 1;
+        if (arr[result[c]] < arrI) {
+          u = c + 1;
+        } else {
+          v = c;
+        }
+      }
+      if (arrI < arr[result[u]]) {
+        if (u > 0) {
+          p[i] = result[u - 1];
+        }
+        result[u] = i;
+      }
+    }
+  }
+  u = result.length;
+  v = result[u - 1];
+  while (u-- > 0) {
+    result[u] = v;
+    v = p[v];
+  }
+  return result;
 }
